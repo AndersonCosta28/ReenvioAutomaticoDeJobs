@@ -11,7 +11,7 @@ export type Job = {
 }
 
 export enum StatusJob { Queue, Running, Done, Failed, Stale }
-
+const getPathToJob = (uuid: string): string => "./charges_jobs/" + uuid + ".json"
 //#region Job_File
 
 export const createJobFile = (id_charge: string) => writeFileSync(getPathToJob(id_charge), JSON.stringify(generateChargeJobs(id_charge)))
@@ -25,7 +25,7 @@ export const readJobFile = (id_charge: string): Job[] => {
     return content
 }
 
-const getPathToJob = (uuid: string): string => "./charges_jobs/" + uuid + ".json"
+
 //#endregion
 
 //#region Handler Job
