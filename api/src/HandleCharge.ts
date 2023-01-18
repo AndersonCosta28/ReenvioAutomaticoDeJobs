@@ -4,9 +4,9 @@ export type Charge = {
     id: string,
     status: string
 }
-export enum StatusCharge { Running, Done }
+export enum StatusCharge { Running, Done, Partially_Done }
 
-const chargePath = "./charges.json"
+export const chargePath = "./charges.json"
 
 //#region Charge_File
 export const createCharge = (): Charge => {
@@ -33,13 +33,14 @@ const readFileCharge = ():Charge[] => JSON.parse(readFileSync(chargePath).toStri
         return content.filter((charge: Charge) => charge.status === StatusCharge[StatusCharge.Running])
     }
 
-    export const updateChargeToDone = (id_charge: string): void => {
+    export const updateStatusOfCharge = (id_charge: string, status: string): void => {
         let content = readFileCharge()
         content = content.map((charge: Charge) => {
             if (charge.id === id_charge)
-                charge.status = StatusCharge[StatusCharge.Done]
+                charge.status = status
             return charge
         })
         writeFileSync(chargePath, JSON.stringify(content))
     }
+
 //#endregion

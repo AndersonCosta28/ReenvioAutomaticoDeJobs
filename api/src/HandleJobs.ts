@@ -6,10 +6,11 @@ export type Job = {
     id_charge: string,
     status: string,
     was_sent: boolean,
-    id_parent: string
+    id_parent: string,
+    retry: number
 }
 
-export enum StatusJob { Queue, Running, Done, Failed }
+export enum StatusJob { Queue, Running, Done, Failed, Stale }
 
 //#region Job_File
 
@@ -38,6 +39,8 @@ export const getPendingJobs = (id_charge: string): Job[] => {
     return content
 }
 
+export const getStaleJobs = (id_charge: string): Job[] => readJobFile(id_charge).filter((job: Job) => job.status === StatusJob[StatusJob.Stale])
+
 const generateChargeJobs = (id_charge: string): Job[] => {
     const jobs: Job[] = []
     for (let i = 0; i < 12; i++)
@@ -45,12 +48,13 @@ const generateChargeJobs = (id_charge: string): Job[] => {
     return jobs
 }
 
-const generateOneJob = (id_charge: string, id_parent = ""): Job => ({
+const generateOneJob = (id_charge: string, jobParent?: Job): Job => ({
     id_job: uuid4(),
     id_charge: id_charge,
     status: StatusJob[StatusJob.Queue],
     was_sent: false,
-    id_parent: id_parent
+    id_parent: !jobParent ? "" : jobParent.id_job,
+    retry: !jobParent ? 0 : ++jobParent.retry
 })
 
 const generateStatus = () => {
@@ -67,13 +71,20 @@ const updatePendingJobs = (job: Job) => {
 export const resendFailedJobs = (id_charge: string) => {
     const currentAllJobs = readJobFile(id_charge)
     const newsSentJobs: Job[] = []
-    currentAllJobs.map((element: Job) => {
-        if (element.status === StatusJob[StatusJob.Failed] && element.was_sent === false) {
-            element.was_sent = true;
-            newsSentJobs.push(generateOneJob(id_charge, element.id_job))
-            return element
-        }
-    });
+    const staleJobs: Job[] = []
+    currentAllJobs
+        .filter((element: Job) => element.status === StatusJob[StatusJob.Failed] && element.was_sent === false)
+        .filter((element: Job) => {
+            if (element.retry < 3) {
+                element.was_sent = true;
+                newsSentJobs.push(generateOneJob(id_charge, element))
+            }
+            else {
+                element.status = StatusJob[StatusJob.Stale]
+                staleJobs.push(element)
+            }
+        })
+
     const newContent = [...currentAllJobs, ...newsSentJobs]
     updateJobFile(id_charge, newContent)
 }
