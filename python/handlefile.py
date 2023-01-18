@@ -5,48 +5,56 @@ import uuid
 class HandleJobsCharge:
     id_charge = str(uuid.uuid4())
     content = []
-    failedJobs = []
+    runningJobs = []
 
     def readFile(self):
         file = open(self.id_charge + ".json", "r")
         self.content = json.loads(file.read())        
-        self.content = self._updateRunningJobs() # Vamos atualizar os jobs que ainda estão rodando
-        self.failedJobs = self._getFailedJobs()  # Vamos separar os que falharam
+        self._updatePendingJobs() # Vamos atualizar os jobs que ainda estão rodando
         file.close()
 
     def resendJobsFailed(self):
-        for i in range(0, len(self.failedJobs)):
-            indexJob = self.failedJobs[i]["index"]
+        failedJobs = self._getFailedJobs()
+        for i in range(0, len(failedJobs)):
+            indexJob = failedJobs[i]["index"]
             job = self.content[indexJob]
             job['was_sent'] = True
             self.content.append(self._generateOneJob(job['id_job']))
 
     def updateFile(self):
-        jsonString = json.dumps(self.content)
+        jsonString = json.dumps(self.content) # , sort_keys=True, indent=4
         jsonFile = open(self.id_charge + ".json", "w")
         jsonFile.write(jsonString)
         jsonFile.close()
 
     def createFile(self):
-        jsonString = json.dumps(self._generateChargeJobs())
+        jsonString = json.dumps(self._generateChargeJobs()) # , sort_keys=True, indent=4
         jsonFile = open(self.id_charge + ".json", "w")
         jsonFile.write(jsonString)
         jsonFile.close()
 
-    def _updateRunningJobs(self):
+    def getPendingJobs(self): # É recomendado que essa função seja chamada após o reenvio dos Jobs falhos
+        pendingJobs = []
         for i in range(0, len(self.content)):
-            isRunning = self.content[i]['status'] == "running"
-            if (isRunning):
+            job = self.content[i]
+            isPendent = job['status'] == "running" or job['status'] == "queue"
+            if (isPendent):
+                pendingJobs.append({"job": job, "index": i})
+        return pendingJobs
+
+    def _updatePendingJobs(self):
+        for i in range(0, len(self.content)):
+            job = self.content[i]
+            isPendent = job['status'] == "running" or job['status'] == "queue"
+            if (isPendent):
                 self.content[i]['status'] = self._generateStatus()
-        return self.content
 
     def _getFailedJobs(self):
         failedJobs = []
         for i in range(0, len(self.content)):
             job = self.content[i]
-            isPendent = job['status'] == "failed"
-            wasAlreadySent = job['was_sent'] == False
-            if (isPendent and wasAlreadySent):
+            isPendent = job['status'] == "failed" and job['was_sent'] == False
+            if (isPendent):
                 failedJobs.append({"job": job, "index": i})
         return failedJobs
 
@@ -64,7 +72,7 @@ class HandleJobsCharge:
         return {
             "id_job": str(uuid.uuid4()),
             "id_charge": self.id_charge,
-            "status": self._generateStatus(),
+            "status": "queue",
             "was_sent": False,
             "id_parent": id_parent
         }

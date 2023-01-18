@@ -18,7 +18,7 @@ def main():
             handleJobsCharge.readFile() # Lê o arquivo e atualiza os jobs que estão running e separa os que estão falhados
             handleJobsCharge.resendJobsFailed() # Reenviamos os Jobs falhados
             handleJobsCharge.updateFile() # Atualizamos o arquivo
-            if (len(handleJobsCharge.failedJobs) == 0):
+            if (len(handleJobsCharge.getPendingJobs()) == 0):
                 break
 
 
