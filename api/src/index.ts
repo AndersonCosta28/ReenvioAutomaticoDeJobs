@@ -23,7 +23,7 @@ app.get("/", (req: Request, res: Response) => {
 app.get("/criar_carga", async (req: Request, res: Response) => {
     const { charge, jobsId } = await chargeService.create()
     jobService.create(charge.id, jobsId)
-    res.send({ id_carga: charge.id, jobsId: jobsId })
+    res.send({ id_charge: charge.id, jobsId: jobsId })
 })
 
 app.listen(PORT, () => console.log("Listening on port 3005"))

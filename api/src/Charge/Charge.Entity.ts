@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm"
+import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm"
 
 @Entity()
 export default class Charge {
@@ -7,4 +7,10 @@ export default class Charge {
 
     @Column()
     status: string
+
+    @CreateDateColumn()
+    create_at?: Date
+
+    @UpdateDateColumn()
+    update_at?: Date
 }

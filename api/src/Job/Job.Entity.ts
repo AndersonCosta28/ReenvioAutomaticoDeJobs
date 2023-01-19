@@ -1,4 +1,4 @@
-import { Column, Entity, PrimaryColumn, PrimaryGeneratedColumn } from "typeorm";
+import { Column, CreateDateColumn, Entity, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from "typeorm";
 
 @Entity()
 export default class Job {
@@ -18,4 +18,10 @@ export default class Job {
 
     @Column()
     retry: number
+
+    @CreateDateColumn()
+    create_at?: Date
+
+    @UpdateDateColumn()
+    update_at?: Date
 }
