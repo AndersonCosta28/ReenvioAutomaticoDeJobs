@@ -38,7 +38,7 @@ export default class JobService {
     getPendingJobs = async (id_charge: string): Promise<Job[]> => {
         const content = (await this.findAll(id_charge))
             .filter((job: Job) => {
-                const failed = job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry < 3;
+                const failed = job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry < this.maxAttempts;
                 const runnig = job.status === StatusJob[StatusJob.Running]
                 const queue = job.status === StatusJob[StatusJob.Queue]
                 return failed || runnig || queue
