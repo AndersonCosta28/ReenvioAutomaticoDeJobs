@@ -68,17 +68,21 @@ export default class JobService {
         return job
     }
 
+    leaveStaleWorkThatExceededAttempts = async (id_charge: string) => {
+        const currentAllJobs = await this.findAll(id_charge)
+        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry >= 3)
+        for (const job of faliedJobs) {
+            job.status = StatusJob[StatusJob.Stale]
+            await this.update(job)
+        }
+    }
+
     resendFailedJobs = async (id_charge: string) => {
         const currentAllJobs = await this.findAll(id_charge)
-        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false)
+        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry < 3)
         for (const job of faliedJobs) {
-            if (job.retry < 3) {
-                job.was_sent = true;
-                await this.createChild(job, uuid4())
-            }
-            else
-                job.status = StatusJob[StatusJob.Stale]
-
+            job.was_sent = true;
+            await this.createChild(job, uuid4())
             await this.update(job)
         }
     }
