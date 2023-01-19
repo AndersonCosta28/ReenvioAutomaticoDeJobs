@@ -8,7 +8,6 @@ import { StatusCharge } from './Charge/Charge.Commom'
 import http from 'http'
 import { Server as WebSocketServer } from "socket.io"
 
-
 const PORT = 3005
 const app = express()
 const server = http.createServer(app)

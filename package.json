@@ -24,9 +24,9 @@
   },
   "scripts": {
     "prevBuild": "rimraf dist",
-    "build": "tsc",
     "postBuild": "cp -r 'src/Pages' 'dist/Pages'",
-    "start": "npm run prevBuild && npm run build && npm run postBuild && node dist/.",
+    "build": "npm run prevBuild && tsc && npm run postBuild ",
+    "start": "node dist/.",
     "dev": "nodemon --exec ts-node ./src/index.ts"
   }
 }
