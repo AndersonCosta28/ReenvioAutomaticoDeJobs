@@ -5,6 +5,7 @@ import AppDataSource from "../Database/DataSource"
 
 export default class JobService {
     repository = AppDataSource.getRepository(Job)
+    maxAttempts = 3
 
 
     create = async (id_charge: string, jobsId: string[]) => {
@@ -37,7 +38,7 @@ export default class JobService {
     getPendingJobs = async (id_charge: string): Promise<Job[]> => {
         const content = (await this.findAll(id_charge))
             .filter((job: Job) => {
-                const failed = job.status === StatusJob[StatusJob.Failed] && job.was_sent === false;
+                const failed = job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry < 3;
                 const runnig = job.status === StatusJob[StatusJob.Running]
                 const queue = job.status === StatusJob[StatusJob.Queue]
                 return failed || runnig || queue
@@ -68,18 +69,11 @@ export default class JobService {
         return job
     }
 
-    leaveStaleWorkThatExceededAttempts = async (id_charge: string) => {
-        const currentAllJobs = await this.findAll(id_charge)
-        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry >= 3)
-        for (const job of faliedJobs) {
-            job.status = StatusJob[StatusJob.Stale]
-            await this.update(job)
-        }
-    }
+    getErrorJobsThatExceededAttempts = async (id_charge: string) => (await this.findAll(id_charge)).filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry >= this.maxAttempts)
 
     resendFailedJobs = async (id_charge: string) => {
         const currentAllJobs = await this.findAll(id_charge)
-        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry < 3)
+        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry < this.maxAttempts)
         for (const job of faliedJobs) {
             job.was_sent = true;
             await this.createChild(job, uuid4())
