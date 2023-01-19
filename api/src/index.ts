@@ -1,6 +1,5 @@
 import { existsSync, mkdirSync, writeFileSync } from 'fs'
-import { v4 as uuid4 } from 'uuid'
-import { createJobFile, getPendingJobs, getStaleJobs, Job, readJobFile, resendFailedJobs, StatusJob } from './HandleJobs'
+import { createJobFile, getPendingJobs, getStaleJobs, Job, leaveStaleWorkThatExceededAttempts, resendFailedJobs } from './HandleJobs'
 import express, { Request, Response } from "express"
 import cors from 'cors'
 import { Charge, StatusCharge, chargePath, createCharge, getPendingCharges, updateStatusOfCharge } from './HandleCharge'
@@ -9,7 +8,7 @@ const PORT = 3005
 const app = express()
 
 if (!existsSync("./charges_jobs")) mkdirSync("charges_jobs")
-if (!existsSync(chargePath)) writeFileSync(chargePath, "[{}]")
+if (!existsSync(chargePath)) writeFileSync(chargePath, "[]")
 
 app.use(cors())
 app.use(express.json())
@@ -32,8 +31,10 @@ setInterval(() => {
     console.log("Number of pending charges: " + pendingCharges.length)
     pendingCharges.forEach((charge: Charge) => {
         const pendingJobs = getPendingJobs(charge.id)
-        if (pendingJobs.length > 0)
+        if (pendingJobs.length > 0){
+            leaveStaleWorkThatExceededAttempts(charge.id)
             resendFailedJobs(charge.id)
+        }
         else {
             if (getStaleJobs(charge.id).length > 0)
                 updateStatusOfCharge(charge.id, StatusCharge[StatusCharge.Partially_Done])

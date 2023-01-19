@@ -68,21 +68,28 @@ const updatePendingJobs = (job: Job) => {
     return job
 }
 
+export const leaveStaleWorkThatExceededAttempts = (id_charge: string) => {
+    let currentAllJobs = readJobFile(id_charge)
+    currentAllJobs = currentAllJobs
+        .map((job: Job) => {
+            if (job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry === 3)
+                job.status = StatusJob[StatusJob.Stale]
+            return job
+        })
+    updateJobFile(id_charge, currentAllJobs)
+}
+
 export const resendFailedJobs = (id_charge: string) => {
-    const currentAllJobs = readJobFile(id_charge)
+    let currentAllJobs = readJobFile(id_charge)
     const newsSentJobs: Job[] = []
-    const staleJobs: Job[] = []
-    currentAllJobs
-        .filter((element: Job) => element.status === StatusJob[StatusJob.Failed] && element.was_sent === false)
-        .filter((element: Job) => {
-            if (element.retry < 3) {
-                element.was_sent = true;
-                newsSentJobs.push(generateOneJob(id_charge, element))
+    
+    currentAllJobs = currentAllJobs        
+        .map((job: Job) => {
+            if (job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry < 3){
+                job.was_sent = true;
+                newsSentJobs.push(generateOneJob(id_charge, job))
             }
-            else {
-                element.status = StatusJob[StatusJob.Stale]
-                staleJobs.push(element)
-            }
+            return job
         })
 
     const newContent = [...currentAllJobs, ...newsSentJobs]
