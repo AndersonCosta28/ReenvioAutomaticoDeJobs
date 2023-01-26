@@ -17,7 +17,7 @@ export default class Job {
     @Column({ default: "" })
     id_parent: string
 
-    @Column({ default: 0 })
+    @Column({ default: 2 })
     retry: number
 
     @CreateDateColumn()
