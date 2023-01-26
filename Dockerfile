@@ -1,10 +1,9 @@
 FROM node:lts
 
-WORKDIR /usr/app
+WORKDIR /home/app
 
 COPY package.json ./
-RUN npm install -g npm@9.3.1
-RUN npm install
+RUN yarn
 
 COPY ./dist ./
 

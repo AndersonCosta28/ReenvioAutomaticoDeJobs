@@ -9,6 +9,7 @@
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "fs": "^0.0.1-security",
+    "mysql2": "^2.3.3",
     "nodemon": "^2.0.20",
     "reflect-metadata": "^0.1.13",
     "socket.io": "^4.5.4",
@@ -27,6 +28,9 @@
     "postBuild": "cp -r 'src/Pages' 'dist/Pages'",
     "build": "npm run prevBuild && tsc && npm run postBuild ",
     "start": "node dist/.",
-    "dev": "nodemon --exec ts-node ./src/index.ts"
+    "dev": "nodemon --exec ts-node ./src/index.ts",
+    "docker:build": "npm run build && docker build -t api_node_airflow .",
+    "docker:run": "docker run -p 3005:3005 api_node_airflow",
+    "docker": "npm run docker:build && npm run docker:run"
   }
 }

@@ -1,4 +1,4 @@
-import { StatusCharge } from "../HandleCharge"
+import { StatusCharge } from "./Charge.Commom"  
 import Charge from "./Charge.Entity"
 import { v4 as uuid4 } from 'uuid'
 import AppDataSource from "../Database/DataSource"
@@ -7,12 +7,18 @@ export default class ChargeService {
     repository = AppDataSource.getRepository(Charge)
 
     create = async (): Promise<{charge: Charge, jobsId: string[]}> => {
-        const charge = { id: uuid4(), status: StatusCharge[StatusCharge.Running] }
+        const charge: Charge = { id: uuid4(), status: StatusCharge[StatusCharge.Running], credential_id: '' }
         const chargeCreated = this.repository.create(charge)
         const jobsId: string[] = []
         for (let i = 0; i < 12; i++)
             jobsId.push(uuid4())
         return {charge: await this.repository.save(chargeCreated), jobsId}
+    }
+
+    create2 = async (id_charge: string, id_credential: string): Promise<Charge> => {
+        const charge: Charge = { id: id_charge, status: StatusCharge[StatusCharge.Running], credential_id: id_credential }
+        const chargeCreated = this.repository.create(charge)
+        return await this.repository.save(chargeCreated)
     }
 
     findAll = async (): Promise<Charge[]> => await this.repository.find()

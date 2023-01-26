@@ -5,8 +5,11 @@ export default class Charge {
     @PrimaryColumn()
     id: string
 
-    @Column()
+    @Column({ default: "Running" })
     status: string
+
+    @Column()
+    credential_id: string
 
     @CreateDateColumn()
     create_at?: Date

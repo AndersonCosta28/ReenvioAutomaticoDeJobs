@@ -4,19 +4,20 @@ import { Column, CreateDateColumn, Entity, PrimaryColumn, PrimaryGeneratedColumn
 export default class Job {
     @PrimaryColumn()
     id: string
+    
     @Column()
     id_charge: string
 
-    @Column()
+    @Column({ default: "Queue" })
     status: string
 
-    @Column()
+    @Column({ default: false })
     was_sent: boolean
 
-    @Column()
+    @Column({ default: "" })
     id_parent: string
 
-    @Column()
+    @Column({ default: 0 })
     retry: number
 
     @CreateDateColumn()

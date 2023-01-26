@@ -1,12 +1,17 @@
 import { DataSource } from "typeorm"
 import Charge from "../Charge/Charge.Entity"
 import Job from "../Job/Job.Entity"
+import Credential from "../Credential/Credential.entity"
 
 const AppDataSource = new DataSource({
-    type: "sqlite",            
-    database: "db.sql",
+    type: "mysql",            
+    database: "bq",
+    host: "host.docker.internal",
+    port: 3306,
+    username: "root",
+    password: "1234",
     synchronize: true,
-    entities: [Charge, Job]
+    entities: [Charge, Job, Credential]
 })
 
 AppDataSource.initialize()
