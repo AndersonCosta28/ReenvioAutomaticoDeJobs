@@ -39,7 +39,7 @@ app.get("/criar_carga2", async (req: Request, res: Response) => {
     res.send(jobsId)
 })
 
-app.get("/resend_jobs_failed", async (req: Request, res: Response) => res.send(await jobService.resendFailedJobs(req.params.id_charge)))
+app.get("/resend_jobs_failed/:id_charge", async (req: Request, res: Response) => res.send(await jobService.resendFailedJobs(req.params.id_charge)))
 
 app.get("/updateStateOfCharge", async (req: Request, res: Response) => {
     const { id_charge, state } = req.query
@@ -52,42 +52,43 @@ server.listen(PORT, () => console.log("Listening on port 3005"))
 
 io.on('connection', (socket) => { });
 
-setInterval(async () => {
-    let currentCharge = "";
-    try {
-        await jobService.updateAllJobsPending()
-        console.log(new Date())
-        // const pendingCharges = await chargeService.getPendingCharges()
+// setInterval(async () => {
+//     let currentCharge = "";
+//     try {
+//         // await jobService.updateAllJobsPending()
+//         console.log(new Date())
+//         const pendingCharges = await chargeService.getPendingCharges()
 
-        // for (const pendingCharge of pendingCharges) {
-        //     currentCharge = pendingCharge.id
-        //     const pendingJobs = await jobService.getPendingJobs(pendingCharge.id)
-        //     // if (pendingJobs.length > 0)
-        //     //     await jobService.resendFailedJobs(pendingCharge.id)
-        //     // else {
-        //     //     if ((await jobService.getErrorJobsThatExceededAttempts(pendingCharge.id)).length > 0)
-        //     //         await chargeService.updateStatusOfCharge(pendingCharge.id, StatusCharge[StatusCharge.Partially_Done])
-        //     //     else
-        //     //         await chargeService.updateStatusOfCharge(pendingCharge.id, StatusCharge[StatusCharge.Done])
-        //     // }
-        // }
-    } catch (error) {
-        console.error("Occured an error in the charge -> " + currentCharge)
-        console.error(error)
-    }
-    finally {
-        const allCharges = await chargeService.findAll()
-        const doneCharges = []
-        const runningCharges = []
-        const partially_DoneCharges = []
-        for (const charge of allCharges) {
-            if (charge.status === StatusCharge[StatusCharge.Done])
-                doneCharges.push(charge)
-            else if (charge.status === StatusCharge[StatusCharge.Partially_Done])
-                partially_DoneCharges.push(charge)
-            else if (charge.status === StatusCharge[StatusCharge.Running])
-                runningCharges.push(charge)
-        }
-        io.emit("charges", { doneCharges: doneCharges.length, runningCharges: runningCharges.length, partially_DoneCharges: partially_DoneCharges.length })
-    }
-}, 10000)
+//         for (const pendingCharge of pendingCharges) {
+//             currentCharge = pendingCharge.id
+//             const pendingJobs = await jobService.getPendingJobs(pendingCharge.id)
+//             console.log(pendingJobs.length)
+//             if (pendingJobs.length > 0)
+//                 await jobService.resendFailedJobs(pendingCharge.id)
+//             else {
+//                 if ((await jobService.getErrorJobsThatExceededAttempts(pendingCharge.id)).length > 0)
+//                     await chargeService.updateStatusOfCharge(pendingCharge.id, StatusCharge[StatusCharge.partially_done])
+//                 else
+//                     await chargeService.updateStatusOfCharge(pendingCharge.id, StatusCharge[StatusCharge.done])
+//             }
+//         }
+//     } catch (error) {
+//         console.error("Occured an error in the charge -> " + currentCharge)
+//         console.error(error)
+//     }
+//     finally {
+//         const allCharges = await chargeService.findAll()
+//         const doneCharges = []
+//         const runningCharges = []
+//         const partially_DoneCharges = []
+//         for (const charge of allCharges) {
+//             if (charge.status === StatusCharge[StatusCharge.done])
+//                 doneCharges.push(charge)
+//             else if (charge.status === StatusCharge[StatusCharge.partially_done])
+//                 partially_DoneCharges.push(charge)
+//             else if (charge.status === StatusCharge[StatusCharge.running])
+//                 runningCharges.push(charge)
+//         }
+//         io.emit("charges", { doneCharges: doneCharges.length, runningCharges: runningCharges.length, partially_DoneCharges: partially_DoneCharges.length })
+//     }
+// }, 10000)

@@ -1,1 +1,1 @@
-export enum StatusCharge { Running, Done, Partially_Done }
+export enum StatusCharge { running, done, partially_done }

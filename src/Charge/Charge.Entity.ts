@@ -5,7 +5,7 @@ export default class Charge {
     @PrimaryColumn()
     id: string
 
-    @Column({ default: "Running" })
+    @Column({ default: "running" })
     status: string
 
     @Column()

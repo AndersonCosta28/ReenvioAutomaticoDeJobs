@@ -48,9 +48,9 @@ export default class JobService {
     getPendingJobs = async (id_charge: string): Promise<Job[]> => {
         const content = (await this.findAll(id_charge))
             .filter((job: Job) => {
-                const failed = job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry > 0;
-                const runnig = job.status === StatusJob[StatusJob.Running]
-                const queue = job.status === StatusJob[StatusJob.Queue]
+                const failed = job.status === StatusJob[StatusJob.failed] && job.was_sent === false && job.retries > 0;
+                const runnig = job.status === StatusJob[StatusJob.running]
+                const queue = job.status === StatusJob[StatusJob.queue]
                 return failed || runnig || queue
             })
         return content
@@ -59,10 +59,11 @@ export default class JobService {
     generateOneJob = (id_charge: string, jobId: string, jobParent?: Job): Job => ({
         id: jobId,
         id_charge: id_charge,
-        status: StatusJob[StatusJob.Queue],
+        status: StatusJob[StatusJob.queue],
         was_sent: false,
         id_parent: !jobParent ? "" : jobParent.id,
-        retry: !jobParent ? 2 : jobParent.retry - 1
+        retries: !jobParent ? 2 : jobParent.retries - 1,
+        isInvalidCredential: false
     })
 
     generateStatus = () => {
@@ -71,32 +72,32 @@ export default class JobService {
     }
 
     updateAllJobsPending = async () => {
-        const jobs: Job[] = await this.repository.find({
-            where: [{
-                status: In([StatusJob[StatusJob.Running], StatusJob[StatusJob.Queue]]),
-                retry: MoreThanOrEqual(0)
-            },
-            {
-                status: StatusJob[StatusJob.Failed],
-                retry: MoreThan(0)
-            }]
-        })
-        
-        for (const job of jobs) await this.updatePendingJobs(job)
+        const jobs: Job[] = await this.repository.find()
+
+        for (const job of jobs) {
+            if (
+                ((job.status === StatusJob[StatusJob.running] || job.status === StatusJob[StatusJob.queue]) && job.retries >= 0) ||
+                (job.status === StatusJob[StatusJob.failed] && job.retries > 0)
+            )
+                await this.updatePendingJobs(job)
+
+            else if (job.status === StatusJob[StatusJob.failed] && job.retries <= 0)
+                await this.resendFailedJob(job)
+        }
     }
 
     updatePendingJobs = async (job: Job) => {
-        if (job.status === StatusJob[StatusJob.Running] || job.status === StatusJob[StatusJob.Queue])
+        if (job.status === StatusJob[StatusJob.running] || job.status === StatusJob[StatusJob.queue])
             job.status = this.generateStatus()
         await this.update(job)
         return job
     }
 
-    getErrorJobsThatExceededAttempts = async (id_charge: string) => (await this.findAll(id_charge)).filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry <= 0)
+    getErrorJobsThatExceededAttempts = async (id_charge: string) => (await this.findAll(id_charge)).filter((job: Job) => job.status === StatusJob[StatusJob.failed] && job.was_sent === false && job.retries <= 0)
 
     resendFailedJobs = async (id_charge: string) => {
         const currentAllJobs = await this.findAll(id_charge)
-        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.Failed] && job.was_sent === false && job.retry > 0)
+        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.failed] && job.was_sent === false && job.retries > 0)
         const newJobs: Job[] = []
         for (const job of faliedJobs) {
             job.was_sent = true;
@@ -104,5 +105,11 @@ export default class JobService {
             await this.update(job)
         }
         return newJobs
+    }
+
+    resendFailedJob = async (job: Job) => {
+        job.was_sent = true;
+        await this.createChild(job, uuid4())
+        await this.update(job)
     }
 }

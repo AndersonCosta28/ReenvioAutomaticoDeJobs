@@ -7,7 +7,7 @@ export default class ChargeService {
     repository = AppDataSource.getRepository(Charge)
 
     create = async (): Promise<{charge: Charge, jobsId: string[]}> => {
-        const charge: Charge = { id: uuid4(), status: StatusCharge[StatusCharge.Running], credential_id: '' }
+        const charge: Charge = { id: uuid4(), status: StatusCharge[StatusCharge.running], credential_id: '' }
         const chargeCreated = this.repository.create(charge)
         const jobsId: string[] = []
         for (let i = 0; i < 12; i++)
@@ -16,7 +16,7 @@ export default class ChargeService {
     }
 
     create2 = async (id_charge: string, id_credential: string): Promise<Charge> => {
-        const charge: Charge = { id: id_charge, status: StatusCharge[StatusCharge.Running], credential_id: id_credential }
+        const charge: Charge = { id: id_charge, status: StatusCharge[StatusCharge.running], credential_id: id_credential }
         const chargeCreated = this.repository.create(charge)
         return await this.repository.save(chargeCreated)
     }
@@ -33,7 +33,7 @@ export default class ChargeService {
 
     getPendingCharges = async (): Promise<Charge[]> => {
         const content = await this.findAll()
-        return content.filter((charge: Charge) => charge.status === StatusCharge[StatusCharge.Running])
+        return content.filter((charge: Charge) => charge.status === StatusCharge[StatusCharge.running])
     }
 
     updateStatusOfCharge = async (id_charge: string, status: string): Promise<void> => {

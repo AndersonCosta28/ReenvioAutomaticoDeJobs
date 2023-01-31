@@ -8,7 +8,7 @@ export default class Job {
     @Column()
     id_charge: string
 
-    @Column({ default: "Queue" })
+    @Column({ default: "queue" })
     status: string
 
     @Column({ default: false })
@@ -18,7 +18,10 @@ export default class Job {
     id_parent: string
 
     @Column({ default: 2 })
-    retry: number
+    retries: number
+
+    @Column({ default: false })
+    isInvalidCredential: boolean
 
     @CreateDateColumn()
     create_at?: Date

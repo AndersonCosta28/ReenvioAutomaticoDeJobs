@@ -1,1 +1,1 @@
-export enum StatusJob { Queue, Running, Done, Failed }
+export enum StatusJob { queue, running, done, failed }
