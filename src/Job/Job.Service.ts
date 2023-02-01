@@ -1,26 +1,18 @@
 import Job from "./Job.Entity"
-import { StatusJob } from "./Job.commom"
+import { Params, StatusJob } from "./Job.commom"
 import { v4 as uuid4 } from 'uuid'
 import AppDataSource from "../Database/DataSource"
-import { In, MoreThan, MoreThanOrEqual, Not } from "typeorm"
 
 export default class JobService {
     repository = AppDataSource.getRepository(Job)
 
-    create = async (id_charge: string, jobsId: string[]) => {
-        for (const jobId of jobsId) {
-            const job = this.generateOneJob(id_charge, jobId)
-            const jobCreated = this.repository.create(job)
-            await this.repository.save(jobCreated)
-        }
-    }
-
-    create2 = async (id_charge: string): Promise<string[]> => {
+    create = async (params: Params[]): Promise<string[]> => {
         const jobsId: string[] = []
-        for (let index = 0; index < 12; index++) {
+
+        for (const param of params) {
             const jobId = uuid4()
             jobsId.push(jobId)
-            const job = this.generateOneJob(id_charge, jobId)
+            const job = this.generateOneJob(jobId, param)
             const jobCreated = this.repository.create(job)
             await this.repository.save(jobCreated)
         }
@@ -28,42 +20,25 @@ export default class JobService {
     }
 
     createChild = async (job: Job, newJobId: string) => {
-        const childJob = this.generateOneJob(job.id_charge, newJobId, job)
+        const childJob = this.generateOneJob(newJobId, job.params, job)
         const jobCreated = this.repository.create(childJob)
         return await this.repository.save(jobCreated)
     }
 
-    update = async (job: Job) => await this.repository.update({ id: job.id, id_charge: job.id_charge }, job)
+    update = async (job: Job) => await this.repository.update({ job_id: job.job_id }, job)
 
-    findAll = async (id_charge: string): Promise<Job[]> => {
-        const updatedJobs: Job[] = []
-        let jobs = await this.repository.findBy({ id_charge })
 
-        for (const job of jobs)
-            updatedJobs.push(await this.updatePendingJobs(job))
-
-        return updatedJobs
-    }
-
-    getPendingJobs = async (id_charge: string): Promise<Job[]> => {
-        const content = (await this.findAll(id_charge))
-            .filter((job: Job) => {
-                const failed = job.status === StatusJob[StatusJob.failed] && job.was_sent === false && job.retries > 0;
-                const runnig = job.status === StatusJob[StatusJob.running]
-                const queue = job.status === StatusJob[StatusJob.queue]
-                return failed || runnig || queue
-            })
-        return content
-    }
-
-    generateOneJob = (id_charge: string, jobId: string, jobParent?: Job): Job => ({
-        id: jobId,
-        id_charge: id_charge,
+    generateOneJob = (jobId: string, params: Params, jobParent?: Job): Job => ({
+        job_id: jobId,
+        id_charge: "",
         status: StatusJob[StatusJob.queue],
         was_sent: false,
-        id_parent: !jobParent ? "" : jobParent.id,
+        parent_id: !jobParent ? "" : jobParent.job_id,
         retries: !jobParent ? 2 : jobParent.retries - 1,
-        isInvalidCredential: false
+        isInvalidCredential: false,
+        params: params,
+        credential_id: "",
+        errors: ""
     })
 
     generateStatus = () => {
@@ -73,15 +48,13 @@ export default class JobService {
 
     updateAllJobsPending = async () => {
         const jobs: Job[] = await this.repository.find()
-
         for (const job of jobs) {
-            if (
-                ((job.status === StatusJob[StatusJob.running] || job.status === StatusJob[StatusJob.queue]) && job.retries >= 0) ||
-                (job.status === StatusJob[StatusJob.failed] && job.retries > 0)
-            )
+            if (((job.status === StatusJob[StatusJob.running]
+                || job.status === StatusJob[StatusJob.queue])
+                && job.retries >= 0))
                 await this.updatePendingJobs(job)
 
-            else if (job.status === StatusJob[StatusJob.failed] && job.retries <= 0)
+            else if (job.status === StatusJob[StatusJob.failed] && job.retries > 0 && job.was_sent === false)
                 await this.resendFailedJob(job)
         }
     }
@@ -91,20 +64,6 @@ export default class JobService {
             job.status = this.generateStatus()
         await this.update(job)
         return job
-    }
-
-    getErrorJobsThatExceededAttempts = async (id_charge: string) => (await this.findAll(id_charge)).filter((job: Job) => job.status === StatusJob[StatusJob.failed] && job.was_sent === false && job.retries <= 0)
-
-    resendFailedJobs = async (id_charge: string) => {
-        const currentAllJobs = await this.findAll(id_charge)
-        const faliedJobs = currentAllJobs.filter((job: Job) => job.status === StatusJob[StatusJob.failed] && job.was_sent === false && job.retries > 0)
-        const newJobs: Job[] = []
-        for (const job of faliedJobs) {
-            job.was_sent = true;
-            newJobs.push(await this.createChild(job, uuid4()))
-            await this.update(job)
-        }
-        return newJobs
     }
 
     resendFailedJob = async (job: Job) => {

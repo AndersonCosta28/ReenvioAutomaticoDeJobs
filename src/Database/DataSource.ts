@@ -5,8 +5,8 @@ import Credential from "../Credential/Credential.entity"
 
 const AppDataSource = new DataSource({
     type: "mysql",            
-    database: "local",
-    host: "localhost",
+    database: "bq",
+    host: "host.docker.internal",
     port: 3306,
     username: "root",
     password: "1234",
