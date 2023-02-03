@@ -1,4 +1,5 @@
-import { Column, CreateDateColumn, Entity, PrimaryColumn, UpdateDateColumn } from "typeorm"
+import { Column, CreateDateColumn, Entity, JoinColumn, OneToOne, PrimaryColumn, UpdateDateColumn } from "typeorm"
+import Credential from "../Credential/Credential.entity"
 
 @Entity()
 export default class Charge {
@@ -8,8 +9,9 @@ export default class Charge {
     @Column({ default: "running" })
     status: string
 
-    @Column()
-    credential_id: string
+    @OneToOne(() => Credential, credential => credential.id)
+    @JoinColumn()
+    credential: Credential
 
     @CreateDateColumn()
     create_at?: Date

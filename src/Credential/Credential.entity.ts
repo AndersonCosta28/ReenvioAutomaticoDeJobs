@@ -6,5 +6,6 @@ export default class Credential{
     id: number
 
     @CreateDateColumn()
-    create_at: Date
+    create_at?: Date
+
 }

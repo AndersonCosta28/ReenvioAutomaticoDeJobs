@@ -2,17 +2,18 @@ import Job from "./Job.Entity"
 import { Params, StatusJob } from "./Job.commom"
 import { v4 as uuid4 } from 'uuid'
 import AppDataSource from "../Database/DataSource"
+import Charge from "../Charge/Charge.Entity"
+import Credential from "../Credential/Credential.entity"
 
 export default class JobService {
     repository = AppDataSource.getRepository(Job)
 
-    create = async (params: Params[]): Promise<string[]> => {
-        const jobsId: string[] = []
-
+    create = async (params: Params[], credential: Credential, charge: Charge): Promise<string[]> => {
+        const jobsId: string[] = []        
         for (const param of params) {
             const jobId = uuid4()
             jobsId.push(jobId)
-            const job = this.generateOneJob(jobId, param)
+            const job = this.generateOneJob(jobId, param, credential, charge)
             const jobCreated = this.repository.create(job)
             await this.repository.save(jobCreated)
         }
@@ -20,7 +21,7 @@ export default class JobService {
     }
 
     createChild = async (job: Job, newJobId: string) => {
-        const childJob = this.generateOneJob(newJobId, job.params, job)
+        const childJob = this.generateOneJob(newJobId, job.params, job.credential, job.charge, job)
         const jobCreated = this.repository.create(childJob)
         return await this.repository.save(jobCreated)
     }
@@ -28,21 +29,21 @@ export default class JobService {
     update = async (job: Job) => await this.repository.update({ job_id: job.job_id }, job)
 
 
-    generateOneJob = (jobId: string, params: Params, jobParent?: Job): Job => ({
+    generateOneJob = (jobId: string, params: Params, credential: Credential, charge:Charge, jobParent?: Job): Job => ({
         job_id: jobId,
-        id_charge: "",
-        status: StatusJob[StatusJob.queue],
+        charge,
+        status: StatusJob[StatusJob.queued],
         was_sent: false,
         parent_id: !jobParent ? "" : jobParent.job_id,
         retries: !jobParent ? 2 : jobParent.retries - 1,
         isInvalidCredential: false,
         params: params,
-        credential_id: "",
-        errors: ""
+        credential,
+        errors: "",
     })
 
     generateStatus = () => {
-        const numberRandom = Math.floor(Math.random() * 3) + 1 // Essa parte é importante de notar o +1, ele exclui o Queue
+        const numberRandom = Math.floor(Math.random() * 3) + 1 // Essa parte é importante de notar o +1, ele exclui o Queued
         return StatusJob[numberRandom]
     }
 
@@ -50,7 +51,7 @@ export default class JobService {
         const jobs: Job[] = await this.repository.find()
         for (const job of jobs) {
             if (((job.status === StatusJob[StatusJob.running]
-                || job.status === StatusJob[StatusJob.queue])
+                || job.status === StatusJob[StatusJob.queued])
                 && job.retries >= 0))
                 await this.updatePendingJobs(job)
 
@@ -60,7 +61,7 @@ export default class JobService {
     }
 
     updatePendingJobs = async (job: Job) => {
-        if (job.status === StatusJob[StatusJob.running] || job.status === StatusJob[StatusJob.queue])
+        if (job.status === StatusJob[StatusJob.running] || job.status === StatusJob[StatusJob.queued])
             job.status = this.generateStatus()
         await this.update(job)
         return job
